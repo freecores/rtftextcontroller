@@ -1,31 +1,23 @@
 // ============================================================================
-//	2006-2011  Robert Finch
-//	robfinch@<remove>sympatico.ca
+//	(C) 2006-2011  Robert Finch
+//	robfinch@<remove>opencores.org
 //
 //	rtfTextController.v
 //		text controller
 //
-//  This source code is available for evaluation and validation purposes
-//  only. This copyright statement and disclaimer must remain present in
-//  the file.
-//
-//
-//	NO WARRANTY.
-//  THIS Work, IS PROVIDEDED "AS IS" WITH NO WARRANTIES OF ANY KIND, WHETHER
-//  EXPRESS OR IMPLIED. The user must assume the entire risk of using the
-//  Work.
-//
-//  IN NO EVENT SHALL THE AUTHOR OR CONTRIBUTORS BE LIABLE FOR ANY
-//  INCIDENTAL, CONSEQUENTIAL, OR PUNITIVE DAMAGES WHATSOEVER RELATING TO
-//  THE USE OF THIS WORK, OR YOUR RELATIONSHIP WITH THE AUTHOR.
-//
-//  IN ADDITION, IN NO EVENT DOES THE AUTHOR AUTHORIZE YOU TO USE THE WORK
-//  IN APPLICATIONS OR SYSTEMS WHERE THE WORK'S FAILURE TO PERFORM CAN
-//  REASONABLY BE EXPECTED TO RESULT IN A SIGNIFICANT PHYSICAL INJURY, OR IN
-//  LOSS OF LIFE. ANY SUCH USE BY YOU IS ENTIRELY AT YOUR OWN RISK, AND YOU
-//  AGREE TO HOLD THE AUTHOR AND CONTRIBUTORS HARMLESS FROM ANY CLAIMS OR
-//  LOSSES RELATING TO SUCH UNAUTHORIZED USE.
-//
+// This source file is free software: you can redistribute it and/or modify 
+// it under the terms of the GNU Lesser General Public License as published 
+// by the Free Software Foundation, either version 3 of the License, or     
+// (at your option) any later version.                                      
+//                                                                          
+// This source file is distributed in the hope that it will be useful,      
+// but WITHOUT ANY WARRANTY; without even the implied warranty of           
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the            
+// GNU General Public License for more details.                             
+//                                                                          
+// You should have received a copy of the GNU General Public License        
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.    
+//                                                                          
 //
 //	Text Controller
 //
@@ -43,30 +35,30 @@
 //	characters.
 //
 //
-	// Window Co-ordinates
-//	0:	LEF - left
-//			[11: 0]	horizontal position (hctr value)
-//			[15:14]	size of horizontal pixels - 1 in clock cycles
-//			[   13] text screen enable
-//	1:  TOP - top
-//			[10: 0]	vertical position (vctr value)
-//			[15:14]	size of vertical pixels in scan-lines - 1
-//	2:	RIG - right
-//			[11: 0]	horizontal position (hctr value)
-//	3:	BOT - bottom
-//			[10: 0]	vertical position (vctr value)
+//--------------------------------------------------------------------
+// Registers
 //
-//
-//	Webpack 9.1i xc3s1000-4ft256	
-//	156 LUTs / 81 slices / 128.607 MHz
-//	3 block rams
-//	1 multiplier
+//      00 -         nnnnnnnn  number of columns (horizontal displayed number of characters)
+//      01 -         nnnnnnnn  number of rows    (vertical displayed number of characters)
+//      02 -       n nnnnnnnn  window left       (horizontal sync position - reference for left edge of displayed)
+//      03 -       n nnnnnnnn  window top        (vertical sync position - reference for the top edge of displayed)
+//      04 -         ---nnnnn  maximum scan line (char ROM max value is 7)
+//		05 -         hhhhwwww  pixel size, hhhh=height,wwww=width
+//      07 -         ---nnnnn  color code for transparent background
+//      08 -         -BPnnnnn  cursor start / blink control
+//                             BP: 00=no blink
+//                             BP: 01=no display
+//                             BP: 10=1/16 field rate blink
+//                             BP: 11=1/32 field rate blink
+//      09 -        ----nnnnn  cursor end
+//      10 - aaaaaaaa aaaaaaaaa  start address (index into display memory)
+//      11 - aaaaaaaa aaaaaaaaa  cursor position
+//      12 - aaaaaaaa aaaaaaaaa  light pen position
+//--------------------------------------------------------------------
 //
 // ============================================================================
 
-`define DEBUG 	1
-
-module FF_TextController(
+module rtfTextController(
 	rst_i, clk_i,
 	cyc_i, stb_i, ack_o, we_i, sel_i, adr_i, dat_i, dat_o,
 	lp, curpos,
@@ -106,6 +98,7 @@ output reg [24:0] rgbOut;	// output pixel stream
 
 wire [23:0] bkColor24;	// background color
 wire [23:0] fgColor24;	// foreground color
+wire [23:0] tcColor24;	// transparent color
 
 wire pix;				// pixel value from character generator 1=on,0=off
 
@@ -147,6 +140,8 @@ wire [8:0] txtOut;		// character code
 wire [7:0] charOut;		// character ROM output
 wire [3:0] txtBkCode;	// background color code
 wire [4:0] txtFgCode;	// foreground color code
+reg  [4:0] txtTcCode;	// transparent color code
+reg  bgt;
 
 wire [8:0] tdat_o;
 wire [8:0] cdat_o;
@@ -190,7 +185,7 @@ always @(posedge vclk)
 syncRam4kx9_1rw1r textRam0
 (
 	.wclk(clk_i),
-	.wadr(adr_i[12:1]),
+	.wadr(adr_i[13:1]),
 	.i(dat_i),
 	.wo(tdat_o),
 	.wce(cs_text),
@@ -198,7 +193,7 @@ syncRam4kx9_1rw1r textRam0
 	.wrst(1'b0),
 
 	.rclk(vclk),
-	.radr(txtAddr[11:0]),
+	.radr(txtAddr[12:0]),
 	.o(txtOut),
 	.rce(ld_shft),
 	.rrst(1'b0)
@@ -208,7 +203,7 @@ syncRam4kx9_1rw1r textRam0
 syncRam4kx9_1rw1r colorRam0
 (
 	.wclk(clk_i),
-	.wadr(adr_i[12:1]),
+	.wadr(adr_i[13:1]),
 	.i(dat_i),
 	.wo(cdat_o),
 	.wce(cs_color),
@@ -216,7 +211,7 @@ syncRam4kx9_1rw1r colorRam0
 	.wrst(1'b0),
 
 	.rclk(vclk),
-	.radr(txtAddr[11:0]),
+	.radr(txtAddr[12:0]),
 	.o({txtBkCode,txtFgCode}),
 	.rce(ld_shft),
 	.rrst(1'b0)
@@ -307,6 +302,8 @@ always @(posedge clk_i)
 always @(cs_reg or cursorPos or penAddr or adr_i)
 	if (cs_reg) begin
 		case(adr_i[4:1])
+		4'd0:		rego <= numCols;
+		4'd1:		rego <= numRows;
 		4'd11:		rego <= cursorPos;
 		4'd12:		rego <= penAddr;
 		default:	rego <= 16'h0000;
@@ -323,16 +320,19 @@ always @(cs_reg or cursorPos or penAddr or adr_i)
 reg interlace;
 always @(posedge clk_i)
 	if (rst_i) begin
-// 104x65
-//		windowTop    <= 12'd20;
-//		windowLeft   <= 12'd284;
-//		pixelWidth   <= 4'd0;
-//		pixelHeight  <= 4'd1;		// 525 pixels (408 with border)
+// 104x63
+/*
+		windowTop    <= 12'd26;
+		windowLeft   <= 12'd260;
+		pixelWidth   <= 4'd0;
+		pixelHeight  <= 4'd1;		// 525 pixels (408 with border)
+*/
 // 52x31
 		windowTop    <= 12'd14;
 		windowLeft   <= 12'd117;
 		pixelWidth   <= 4'd1;
 		pixelHeight  <= 4'd3;		// 262 pixels (248 with border)
+
 		numCols      <= COLS;
 		numRows      <= ROWS;
 		maxScanline  <= 5'd7;
@@ -342,9 +342,9 @@ always @(posedge clk_i)
 		cursorStart  <= 5'd00;
 		cursorEnd    <= 5'd31;
 		cursorPos    <= 16'h0003;
+		txtTcCode    <= 5'd31;
 	end
 	else begin
-		cursorPos <= curpos;
 		
 		if (cs_reg & we_i) begin	// register write ?
 
@@ -358,6 +358,7 @@ always @(posedge clk_i)
 					pixelHeight <= dat_i[7:4];
 					pixelWidth  <= dat_i[3:0];	// horizontal pixel width
 					end
+			4'd07:	txtTcCode   <= dat_i[4:0];
 			4'd08:	begin
 					cursorStart <= dat_i[4:0];	// scan line sursor starts on
 					rBlink      <= dat_i[7:5];
@@ -445,7 +446,7 @@ VT163 #(6) ub1
 	.q(bcnt)
 );
 
-wire blink_en = (cursorPos==txtAddr+3) && (scanline[4:0] >= cursorStart) && (scanline[4:0] <= cursorEnd);
+wire blink_en = (cursorPos==txtAddr+2) && (scanline[4:0] >= cursorStart) && (scanline[4:0] <= cursorEnd);
 
 VT151 ub2
 (
@@ -460,6 +461,9 @@ VT151 ub2
 // These tables map a five bit color code to an eight bit color value.
 rtfColorROM ucm1 (.clk(vclk), .ce(nhp & ld_shft), .code(txtBkCode1),  .color(bkColor24) );
 rtfColorROM ucm2 (.clk(vclk), .ce(nhp & ld_shft), .code(txtFgCode1),  .color(fgColor24) );
+always @(posedge vclk)
+	if (nhp & ld_shft)
+		bgt <= {1'b0,txtBkCode1}==txtTcCode;
 
 
 // Convert character bitmap to pixels
@@ -512,7 +516,7 @@ always @(posedge vclk)
 		5'b01xxx:	rgbOut <= rgbIn;
 		5'b0010x:	rgbOut <= 24'hBF2020;
 		5'b0011x:	rgbOut <= 24'hDFDFDF;
-		5'b000x0:	rgbOut <= bkColor24;
+		5'b000x0:	rgbOut <= bgt ? rgbIn : bkColor24;
 		5'b000x1:	rgbOut <= fgColor24;
 		default:	rgbOut <= rgbIn;
 		endcase
