@@ -1,5 +1,5 @@
 // ============================================================================
-//	(C) 2006-2011  Robert Finch
+//	(C) 2006-2012  Robert Finch
 //	robfinch@<remove>opencores.org
 //
 //	rtfTextController.v
@@ -64,7 +64,7 @@ module rtfTextController(
 	lp, curpos,
 	vclk, eol, eof, blank, border, rgbIn, rgbOut
 );
-parameter COLS = 12'd52;
+parameter COLS = 12'd56;
 parameter ROWS = 12'd31;
 
 // Syscon
@@ -77,7 +77,7 @@ input  stb_i;			// data strobe
 output ack_o;			// transfer acknowledge
 input  we_i;			// write
 input  [ 1:0] sel_i;	// byte select
-input  [31:0] adr_i;	// address
+input  [63:0] adr_i;	// address
 input  [15:0] dat_i;	// data input
 output [15:0] dat_o;	// data output
 reg    [15:0] dat_o;
@@ -137,7 +137,7 @@ wire ld_shft = nxt_col & nhp;
 reg [15:0] txtAddr;		// index into memory
 reg [15:0] penAddr;
 wire [8:0] txtOut;		// character code
-wire [7:0] charOut;		// character ROM output
+wire [8:0] charOut;		// character ROM output
 wire [3:0] txtBkCode;	// background color code
 wire [4:0] txtFgCode;	// foreground color code
 reg  [4:0] txtTcCode;	// transparent color code
@@ -145,7 +145,7 @@ reg  bgt;
 
 wire [8:0] tdat_o;
 wire [8:0] cdat_o;
-wire [7:0] chdat_o;
+wire [8:0] chdat_o;
 
 wire [2:0] scanindex = scanline[2:0];
 
@@ -154,13 +154,14 @@ wire [2:0] scanindex = scanline[2:0];
 // Address Decoding
 // I/O range FFDx
 //--------------------------------------------------------------------
-wire cs_text = cyc_i && stb_i && (adr_i[31:16]==16'hFFD0);
-wire cs_color= cyc_i && stb_i && (adr_i[31:16]==16'hFFD1);
-wire cs_rom  = cyc_i && stb_i && (adr_i[31:16]==16'hFFD2);
-wire cs_reg  = cyc_i && stb_i && (adr_i[31: 8]==24'hFFDA_00);
+wire cs_text = cyc_i && stb_i && (adr_i[63:16]==48'hFFFF_FFFF_FFD0);
+wire cs_color= cyc_i && stb_i && (adr_i[63:16]==48'hFFFF_FFFF_FFD1);
+wire cs_rom  = cyc_i && stb_i && (adr_i[63:16]==48'hFFFF_FFFF_FFD2);
+wire cs_reg  = cyc_i && stb_i && (adr_i[63: 8]==56'hFFFF_FFFF_FFDA_00);
+wire cs_any = cs_text|cs_color|cs_rom|cs_reg;
 
-
-always @(cs_text or cs_color or cs_rom or cs_reg or tdat_o or cdat_o or chdat_o or rego)
+// Register outputs
+always @(posedge clk_i)
 	if (cs_text) dat_o <= tdat_o;
 	else if (cs_color) dat_o <= cdat_o;
 	else if (cs_rom) dat_o <= chdat_o;
@@ -229,7 +230,7 @@ syncRam4kx9_1rw1r charRam0
 	.i(dat_i),
 	.wo(chdat_o),
 	.wce(cs_rom),
-	.we(we_i),
+	.we(1'b0),//we_i),
 	.wrst(1'b0),
 
 	.rclk(vclk),
@@ -250,15 +251,18 @@ always @(posedge vclk)
 
 //--------------------------------------------------------------------
 // bus interfacing
-// - there is a one cycle latency for reads, an ack is generated
+// - there is a two cycle latency for reads, an ack is generated
 //   after the synchronous RAM read
 // - writes can be acknowledged right away.
 //--------------------------------------------------------------------
-reg ramRdy;
+reg ramRdy,ramRdy1;
 always @(posedge clk_i)
-	ramRdy = cs_text|cs_rom|cs_color|cs_reg;
+begin
+	ramRdy1 <= cs_any & !(ramRdy1|ramRdy);
+	ramRdy <= ramRdy1 & cs_any;
+end
 
-assign ack_o = (cyc_i & stb_i) ? (we_i ? (cs_text|cs_color|cs_rom|cs_reg) : ramRdy) : 1'b0;
+assign ack_o = (cyc_i & stb_i) ? (we_i ? cs_any : ramRdy) : 1'b0;
 
 
 //--------------------------------------------------------------------
@@ -328,10 +332,10 @@ always @(posedge clk_i)
 		pixelHeight  <= 4'd1;		// 525 pixels (408 with border)
 */
 // 52x31
-		windowTop    <= 12'd14;
-		windowLeft   <= 12'd117;
-		pixelWidth   <= 4'd1;
-		pixelHeight  <= 4'd3;		// 262 pixels (248 with border)
+		windowTop    <= 12'd12;
+		windowLeft   <= 12'd128;
+		pixelWidth   <= 4'd2;
+		pixelHeight  <= 4'd2;		// 262 pixels (248 with border)
 
 		numCols      <= COLS;
 		numRows      <= ROWS;
@@ -446,7 +450,7 @@ VT163 #(6) ub1
 	.q(bcnt)
 );
 
-wire blink_en = (cursorPos==txtAddr+2) && (scanline[4:0] >= cursorStart) && (scanline[4:0] <= cursorEnd);
+wire blink_en = (cursorPos+2==txtAddr) && (scanline[4:0] >= cursorStart) && (scanline[4:0] <= cursorEnd);
 
 VT151 ub2
 (
@@ -458,7 +462,7 @@ VT151 ub2
 	.z_n()
 );
 
-// These tables map a five bit color code to an eight bit color value.
+// These tables map a five bit color code to an 24 bit color value.
 rtfColorROM ucm1 (.clk(vclk), .ce(nhp & ld_shft), .code(txtBkCode1),  .color(bkColor24) );
 rtfColorROM ucm2 (.clk(vclk), .ce(nhp & ld_shft), .code(txtFgCode1),  .color(fgColor24) );
 always @(posedge vclk)
@@ -504,7 +508,7 @@ ParallelToSerial ups1
 wire bpix = hctr[1] ^ scanline[4];// ^ blink;
 always @(posedge vclk)
 	if (nhp)	
-		iblank <= (row >= numRows) || (col >= numCols + 3) || (col < 3);
+		iblank <= (row >= numRows) || (col >= numCols + 2) || (col < 2);
 	
 
 // Choose between input RGB and controller generated RGB
