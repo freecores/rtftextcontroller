@@ -14,16 +14,15 @@
 
 <body>
 
-<p><font size="6">rtfTextController</font></p>
+<p><font size="6">rtfTextController3</font></p>
 <h2>&nbsp;</h2>
 <h2><font size="5">Description</font></h2>
 <p><font size="4">This is a text mode video display controller that supports 
 color.  The controller uses several internal 
 dual ported r/w memories to store text, text attributes and character bitmaps. The display memory is 
-thirty-two bits wide of which only nine bits are implemented, allowing 512 different 
-simultaneous characters to be displayed. The attribute memory is also thirty-two 
-bits wide with nine bits implemented, allowing for 32 foreground colors and 16 
-background colors. The use of internal dual ported memories means that the text 
+thirty-two bits wide of which only twenty seven bits are implemented, allowing 512 different 
+simultaneous characters to be displayed along with 512 background and foreground 
+colors. The use of internal dual ported memories means that the text 
 controller does not consume any memory bandwidth from the processor.</font></p>
 <table border="1" cellpadding="0" cellspacing="0" width="91%" style="border-left: 1.5pt solid black; border-right: 1.5pt solid black; border-top: 1.5pt solid black; border-bottom: .75pt solid black; background-color: white" fpstyle="27,011111100">
   <tr>
@@ -36,14 +35,7 @@ controller does not consume any memory bandwidth from the processor.</font></p>
     <td width="15%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
     $FFD0_xxxx</td>
     <td width="85%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    text screen memory area, currently the controller only supports a 4k memory</td>
-  </tr>
-  <tr>
-    <td width="15%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    $FFD1_xxxx</td>
-    <td width="85%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    color attribute memory area, currently the controller only supports a 4k 
-    memory</td>
+    text screen and attribute memory area, currently the controller only supports a 4kx27 memory</td>
   </tr>
   <tr>
     <td width="15%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
@@ -63,46 +55,31 @@ controller does not consume any memory bandwidth from the processor.</font></p>
     <td width="85%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">&nbsp;</td>
   </tr>
 </table>
-<p style="margin-bottom: 0">Text Memory Layout</p>
+<p style="margin-bottom: 0">Text and Attribute Memory Layout</p>
 
 <table border="1" cellpadding="0" cellspacing="0" width="34%" style="border-left: 1.5pt solid black; border-right: 1.5pt solid black; border-top: 1.5pt solid black; border-bottom: .75pt solid black; background-color: white" fpstyle="27,011111100">
   <tr>
-    <td width="63%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
-    31&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-    9</td>
-    <td width="37%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
-    8&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+    <td width="21%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
+    31&nbsp; 28</td>
+    <td width="25%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
+    27&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 19</td>
+    <td width="25%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
+    18&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 10</td>
+    <td width="29%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
+    9&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
     0</td>
   </tr>
   <tr>
-    <td width="63%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    unimplemented</td>
-    <td width="37%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
+    <td width="21%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
+    unimp</td>
+    <td width="25%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
+    Bk Color</td>
+    <td width="25%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
+    Fg Color</td>
+    <td width="29%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
     char code</td>
   </tr>
 </table>
-<p style="margin-bottom: 0">Attribute Memory Layout</p>
-
-<table border="1" cellpadding="0" cellspacing="0" width="34%" style="border-left: 1.5pt solid black; border-right: 1.5pt solid black; border-top: 1.5pt solid black; border-bottom: .75pt solid black; background-color: white" fpstyle="27,011111100">
-  <tr>
-    <td width="63%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
-    31&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
-    9</td>
-    <td width="17%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
-    8&nbsp;&nbsp;&nbsp;&nbsp; 5</td>
-    <td width="57%" align="center" style="font-weight: bold; color: white; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: 1.5pt solid black; background-color: gray">
-    4&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 0</td>
-  </tr>
-  <tr>
-    <td width="63%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    unimplemented</td>
-    <td width="17%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    back</td>
-    <td width="57%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-    fore</td>
-  </tr>
-</table>
-<h2 style="margin-bottom: 0">&nbsp;</h2>
 
 <h2 style="margin-bottom: 0">Clocks</h2>
 
@@ -193,6 +170,19 @@ completely independent.</p>
     (2 video clocks per pixel) and 1 (two video scan lines per pixel).</font></td>
   </tr>
   <tr>
+    <td width="11%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" height="53">
+    <font face="Arial">7</font></td>
+    <td width="20%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" align="right" height="53">
+    <font face="Arial">-------n nnnnnnnn</font></td>
+    <td width="9%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" align="center" height="53">
+    <font face="Arial">W</font></td>
+    <td width="19%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" height="53">
+    <font face="Arial">Transparent Color</font></td>
+    <td width="151%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" height="53">
+    <font face="Arial">color value that corresponds to a transparent background 
+    color</font></td>
+  </tr>
+  <tr>
     <td width="11%" align="center" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" height="243">
     <font face="Arial">8</font></td>
     <td width="20%" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white" align="right" height="243"><font face="Arial">
@@ -231,7 +221,7 @@ completely independent.</p>
         <td width="12%" height="18" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
         11</td>
         <td width="88%" height="18" style="font-weight: normal; color: black; border-left-style: none; border-right-style: none; border-top-style: none; border-bottom: .75pt solid black; background-color: white">
-        Box</td>
+        Asterisk</td>
       </tr>
     </table>
     <table border="1" cellpadding="0" cellspacing="0" width="100%" style="border-left: 1.5pt solid black; border-right: 1.5pt solid black; border-top: 1.5pt solid black; border-bottom: .75pt solid black; background-color: white" fpstyle="27,011111100">
